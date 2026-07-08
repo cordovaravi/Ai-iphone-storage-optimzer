@@ -1,0 +1,18 @@
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.xcresult
+
+# SPM
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+
+# Secrets — never commit real keys
+Secrets.xcconfig

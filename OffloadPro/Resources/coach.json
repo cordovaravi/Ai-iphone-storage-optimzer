@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "offload-unused-apps",
+      "title": "Offload Unused Apps",
+      "estGB": 3.0,
+      "iosMinVersion": 16,
+      "steps": [
+        { "text": "Open the Settings app." },
+        { "text": "Tap App Store." },
+        { "text": "Turn on “Offload Unused Apps”. iOS will remove apps you rarely use but keep their documents and data." },
+        { "text": "Reinstalling an offloaded app from the App Store restores it exactly where you left off." }
+      ]
+    },
+    {
+      "id": "offload-single-app",
+      "title": "Offload a Specific App",
+      "estGB": 1.5,
+      "iosMinVersion": 16,
+      "steps": [
+        { "text": "Open Settings → General → iPhone Storage." },
+        { "text": "Wait for the list to load, then tap a large app you rarely open." },
+        { "text": "Tap “Offload App”. The app icon stays on your Home Screen with a cloud symbol; its data is kept." }
+      ]
+    },
+    {
+      "id": "messages-large-attachments",
+      "title": "Review Large Message Attachments",
+      "estGB": 2.0,
+      "iosMinVersion": 16,
+      "steps": [
+        { "text": "Open Settings → General → iPhone Storage." },
+        { "text": "Tap Messages, then “Review Large Attachments”." },
+        { "text": "Swipe left on videos and images you no longer need, or tap Edit to delete several at once." }
+      ]
+    },
+    {
+      "id": "safari-cache",
+      "title": "Clear Safari Cache",
+      "estGB": 0.5,
+      "iosMinVersion": 16,
+      "steps": [
+        { "text": "Open Settings → Safari." },
+        { "text": "Tap “Clear History and Website Data”." },
+        { "text": "This signs you out of most websites — keep passwords handy before confirming." }
+      ]
+    },
+    {
+      "id": "recently-deleted",
+      "title": "Empty Recently Deleted",
+      "estGB": 4.0,
+      "iosMinVersion": 16,
+      "steps": [
+        { "text": "Open the Photos app and scroll to Utilities (iOS 18) or Albums → Recently Deleted." },
+        { "text": "Photos you delete keep using space here for up to 30 days." },
+        { "text": "Tap Select → Delete All to reclaim the space immediately. Only do this after OffloadPro has verified your copies!" }
+      ]
+    },
+    {
+      "id": "icloud-optimize-explained",
+      "title": "iCloud “Optimize Storage” — the Thumbnail Trap",
+      "estGB": 0.0,
+      "iosMinVersion": 16,
+      "steps": [
+        { "text": "Settings → Photos → “Optimize iPhone Storage” keeps only small thumbnails on your phone; originals live in iCloud." },
+        { "text": "That means your originals are rented: stop paying for iCloud and you can lose access to full-quality photos." },
+        { "text": "OffloadPro always downloads the original before offloading, verifies the copy, and only then offers deletion — so the storage you own has the real files." }
+      ]
+    }
+  ]
+}

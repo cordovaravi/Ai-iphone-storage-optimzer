@@ -1,0 +1,92 @@
+name: OffloadPro
+options:
+  bundleIdPrefix: com.we4soft
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: 6.29.0
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios
+    from: 5.0.0
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa
+    from: 8.36.0
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    CODE_SIGN_STYLE: Automatic
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+
+targets:
+  OffloadPro:
+    type: application
+    platform: iOS
+    sources:
+      - path: OffloadPro
+    dependencies:
+      - package: GRDB
+        product: GRDB
+      - package: RevenueCat
+        product: RevenueCat
+      - package: Sentry
+        product: Sentry
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.we4soft.offloadpro
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    info:
+      path: OffloadPro/Info.plist
+      properties:
+        CFBundleDisplayName: OffloadPro
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSPhotoLibraryUsageDescription: >-
+          OffloadPro reads your photo library to show what uses space and to
+          copy items to storage you choose. Photos never leave your device
+          except to destinations you pick.
+        NSPhotoLibraryAddUsageDescription: >-
+          OffloadPro needs write access to remove items you have already
+          safely copied to storage you chose. Nothing is ever deleted
+          without your confirmation.
+        UIBackgroundModes:
+          - processing
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.offloadpro.transfer
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+        ITSAppUsesNonExemptEncryption: false
+
+  OffloadProTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: OffloadProTests
+    dependencies:
+      - target: OffloadPro
+      - package: GRDB
+        product: GRDB
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.we4soft.offloadpro.tests
+
+  OffloadProUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: OffloadProUITests
+    dependencies:
+      - target: OffloadPro
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.we4soft.offloadpro.uitests
