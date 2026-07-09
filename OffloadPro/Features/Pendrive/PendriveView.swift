@@ -193,7 +193,7 @@ private struct PendriveContentView: View {
         if copiedCount == plan.toCopy.count {
             status = mode == .backup
                 ? "Backup complete ✓ Safe to remove the drive."
-                : "Copy complete ✓ Review items in “Verified & ready to remove” on the Storage tab. Safe to remove the drive after that."
+                : "Copy complete ✓ Review items in “Offload status & removal” on the Storage tab. Safe to remove the drive after that."
         }
         await loadPlan()
     }

@@ -26,6 +26,18 @@ enum VerificationGate {
         var isDegradedExport: Bool
     }
 
+    /// Pure per-file comparison used for the non-primary files of a
+    /// multi-resource asset (Live Photo pair): each uploaded file must match
+    /// ITS OWN hash. The primary file additionally goes through
+    /// `markVerified` below.
+    static func matches(_ result: ChecksumResult, sha256: String, md5: String, bytes: Int64) -> Bool {
+        switch result {
+        case .sha256(let remote): return remote.lowercased() == sha256.lowercased()
+        case .md5(let remote): return remote.lowercased() == md5.lowercased()
+        case .sizeOnly(let remoteBytes): return remoteBytes == bytes
+        }
+    }
+
     static func markVerified(_ item: inout TransferItem, evidence: Evidence) throws {
         if evidence.isDegradedExport {
             if !assertionsDisabledForTesting {

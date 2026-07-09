@@ -14,7 +14,9 @@ final class DashboardViewModel: ObservableObject {
     private let scanner = AppEnvironment.shared.scanner
     private var progressTask: Task<Void, Never>?
 
-    func startScan() {
+    /// Launch/refresh entry point: full scan only when the persisted index
+    /// is empty; otherwise a cheap reconcile — no rescan on every launch.
+    func refresh() {
         progressTask?.cancel()
         progressTask = Task { [weak self] in
             guard let self else { return }
@@ -27,7 +29,7 @@ final class DashboardViewModel: ObservableObject {
         }
         Task {
             do {
-                try await scanner.runFullScan()
+                try await scanner.refreshIfNeeded()
                 await reload()
             } catch {
                 scanError = error.localizedDescription

@@ -55,6 +55,43 @@ actor ScannerService {
         }
     }
 
+    // MARK: Launch entry point
+
+    /// Called on every app launch. The full enumeration runs only when the
+    /// persisted index is empty; otherwise we do a cheap identifier-level
+    /// reconcile against changes made while the app was closed, then resume
+    /// live change observation (§1.2.7 — no full rescan on relaunch).
+    func refreshIfNeeded() async throws {
+        let indexed = try await database.writer.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM asset_index") ?? 0
+        }
+        guard indexed > 0 else {
+            try await runFullScan()
+            return
+        }
+
+        startChangeObservation()
+
+        // Reconcile: PHChange observation only runs while the app is alive,
+        // so diff device ids against the index to catch offline changes.
+        let deviceIds = Set(await provider.allAssetIds())
+        let dbIds = try await database.writer.read { db in
+            Set(try String.fetchAll(db, sql: "SELECT local_id FROM asset_index"))
+        }
+        let newIds = deviceIds.subtracting(dbIds)
+        let goneIds = dbIds.subtracting(deviceIds)
+        if !newIds.isEmpty || !goneIds.isEmpty {
+            let inserted = await provider.snapshots(for: Array(newIds))
+            try apply(change: LibraryChange(
+                inserted: inserted,
+                updated: [],
+                deletedIds: Array(goneIds)
+            ))
+        }
+        publish(ScanProgress(processed: deviceIds.count, total: deviceIds.count, phase: .done))
+        try await runAnalysisPasses()
+    }
+
     // MARK: Full scan
 
     func runFullScan() async throws {
@@ -201,7 +238,28 @@ actor ScannerService {
             }
             await Task.yield()
         }
+        try await runExactDuplicateHashing()
         publish(ScanProgress(processed: images.count, total: images.count, phase: .done))
+    }
+
+    /// §1.2.5 pass 2: SHA-256 only for members of cheap candidate groups
+    /// (same bytes + dims + duration) that don't have a hash yet. Skips
+    /// iCloud-remote originals — the provider never forces downloads here.
+    private func runExactDuplicateHashing() async throws {
+        let all = try await database.writer.read { db in try AssetRecord.fetchAll(db) }
+        let candidates = DuplicateDetector.candidateGroups(all)
+            .flatMap { $0 }
+            .filter { $0.sha256 == nil }
+        guard !candidates.isEmpty else { return }
+
+        for record in candidates {
+            guard let sha = await provider.originalSHA256(localId: record.localId) else { continue }
+            var updated = record
+            updated.sha256 = sha
+            let toSave = updated
+            try await database.writer.write { db in try toSave.save(db) }
+            await Task.yield()
+        }
     }
 
     // MARK: Queries for UI

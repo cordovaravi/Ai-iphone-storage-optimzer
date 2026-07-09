@@ -48,12 +48,22 @@ protocol AssetProviding: Sendable {
     /// authorization (full or limited).
     func allAssets() -> AsyncStream<AssetSnapshot>
     func assetCount() async -> Int
+    /// Cheap identifier-only enumeration used to reconcile the persisted
+    /// index against changes that happened while the app was closed
+    /// (§1.2.7 incrementality across launches).
+    func allAssetIds() async -> [String]
+    /// Full snapshots for a specific id set (new assets found by reconcile).
+    func snapshots(for localIds: [String]) async -> [AssetSnapshot]
     /// Emits one element per `photoLibraryDidChange`.
     func libraryChanges() -> AsyncStream<LibraryChange>
     /// Expensive fallback: byte size resolved by loading data (§1.2.2).
     func resolvedByteSize(localId: String) async -> Int64?
     /// 64×64-ish grayscale thumbnail pixels for perceptual hashing / blur.
     func grayscaleThumbnail(localId: String, maxPixel: Int) async -> GrayscaleBitmap?
+    /// Streamed SHA-256 of the original resource — used only inside
+    /// duplicate candidate groups (§1.2.5 pass 2). Returns nil when the
+    /// original is iCloud-remote (no forced downloads during scan).
+    func originalSHA256(localId: String) async -> String?
 }
 
 /// Minimal grayscale bitmap passed to pure analysis functions.

@@ -65,6 +65,16 @@ final class VerificationGateTests: XCTestCase {
         XCTAssertThrowsError(try VerificationGate.markVerified(&item, evidence: evidence(sha: nil)))
     }
 
+    /// Per-file matcher for Live Photo pairs: each file verifies against
+    /// its own hash, never the primary's.
+    func testPerFileMatcher() {
+        XCTAssertTrue(VerificationGate.matches(.sha256("AA11"), sha256: "aa11", md5: "x", bytes: 1))
+        XCTAssertTrue(VerificationGate.matches(.md5("BB22"), sha256: "x", md5: "bb22", bytes: 1))
+        XCTAssertTrue(VerificationGate.matches(.sizeOnly(42), sha256: "x", md5: "x", bytes: 42))
+        XCTAssertFalse(VerificationGate.matches(.sha256("aa11"), sha256: "different", md5: "x", bytes: 1))
+        XCTAssertFalse(VerificationGate.matches(.sizeOnly(42), sha256: "x", md5: "x", bytes: 41))
+    }
+
     func testSizeOnlyRequiresExactMatch() throws {
         var ok = item()
         try VerificationGate.markVerified(&ok, evidence: evidence(checksum: .sizeOnly(100)))

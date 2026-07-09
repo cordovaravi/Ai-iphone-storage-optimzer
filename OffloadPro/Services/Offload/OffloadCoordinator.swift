@@ -68,6 +68,14 @@ actor OffloadCoordinator {
                 ) ?? 0
                 guard queued == 0, inHistory == 0 else { continue }
 
+                // Re-offloading after a permanent failure starts fresh —
+                // drop the stale failed row so the status UI doesn't show
+                // both the old failure and the new attempt.
+                try db.execute(
+                    sql: "DELETE FROM transfer_queue WHERE local_id = ? AND state = 'failed'",
+                    arguments: [record.localId]
+                )
+
                 var item = TransferItem(
                     id: nil,
                     localId: record.localId,
@@ -155,27 +163,38 @@ actor OffloadCoordinator {
             try item.transition(to: .uploading)
             try save(item)
 
-            var lastRef: RemoteRef?
+            var uploads: [(file: ExportedAsset.File, ref: RemoteRef)] = []
             for file in export.files {
                 let relPath = Self.relPath(for: file.filename, createdAt: nil)
-                lastRef = try await destination.upload(fileURL: file.url, relPath: relPath) { _ in }
+                let ref = try await destination.upload(fileURL: file.url, relPath: relPath) { _ in }
+                uploads.append((file, ref))
             }
-            guard let ref = lastRef else {
+            guard let primaryUpload = uploads.first else {
                 try fail(&item, reason: "Upload returned no reference", retryable: true)
                 return
             }
-            item.destPath = ref.displayPath
+            item.destPath = primaryUpload.ref.displayPath
 
             try item.transition(to: .verifying)
             try save(item)
 
-            let remoteChecksum = try await destination.checksum(of: ref)
+            // Every uploaded file must verify — a Live Photo's paired video
+            // checks against ITS OWN hash, not the photo's.
+            for (file, ref) in uploads.dropFirst() {
+                let checksum = try await destination.checksum(of: ref)
+                guard Self.checksumMatches(checksum, file: file) else {
+                    try fail(&item, reason: "Checksum mismatch on paired file", retryable: true)
+                    return
+                }
+            }
+
+            let remoteChecksum = try await destination.checksum(of: primaryUpload.ref)
             let evidence = VerificationGate.Evidence(
                 localSha256: primary.sha256,
                 localMd5: primary.md5,
                 localBytes: primary.bytes,
                 destinationChecksum: remoteChecksum,
-                destinationRef: ref,
+                destinationRef: primaryUpload.ref,
                 isDegradedExport: false
             )
             try VerificationGate.markVerified(&item, evidence: evidence)
@@ -247,6 +266,20 @@ actor OffloadCoordinator {
     }
 
     // MARK: Deletion stage (§2.2.6) — the ONLY place assets are deleted.
+
+    /// Items currently moving through the pipeline, for the status UI.
+    func activeItems() throws -> [TransferItem] {
+        try database.writer.read { db in
+            try TransferItem
+                .filter(sql: "state IN ('queued','exporting','uploading','verifying')")
+                .order(sql: "id ASC")
+                .fetchAll(db)
+        }
+    }
+
+    static func checksumMatches(_ result: ChecksumResult, file: ExportedAsset.File) -> Bool {
+        VerificationGate.matches(result, sha256: file.sha256, md5: file.md5, bytes: file.bytes)
+    }
 
     func verifiedItems() throws -> [TransferItem] {
         try database.writer.read { db in

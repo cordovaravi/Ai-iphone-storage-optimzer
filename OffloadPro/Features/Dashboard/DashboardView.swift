@@ -40,7 +40,7 @@ struct DashboardView: View {
                 Task {
                     await photoAuth.requestAccess()
                     if photoAuth.state == .authorized || photoAuth.state == .limited {
-                        model.startScan()
+                        model.refresh()
                     }
                 }
             }
@@ -86,11 +86,7 @@ struct DashboardView: View {
         }
         .refreshable { await model.reload() }
         .task {
-            if model.spaceHogs.isEmpty {
-                model.startScan()
-            } else {
-                await model.reload()
-            }
+            model.refresh()
         }
     }
 
@@ -213,11 +209,11 @@ struct DashboardView: View {
                 )
             }
             NavigationLink {
-                DeletionReviewView()
+                OffloadStatusView()
             } label: {
                 reviewRow(
                     icon: "checkmark.shield",
-                    title: "Verified & ready to remove",
+                    title: "Offload status & removal",
                     detail: ""
                 )
             }

@@ -1,8 +1,26 @@
 import Foundation
 import Photos
 import CoreGraphics
+import CryptoKit
 import ImageIO
 import UIKit
+
+/// Serial-callback-safe incremental SHA-256 accumulator for
+/// `PHAssetResourceManager.requestData`.
+private final class SHA256Box: @unchecked Sendable {
+    private var hasher = SHA256()
+    private let lock = NSLock()
+
+    func update(_ data: Data) {
+        lock.lock(); defer { lock.unlock() }
+        hasher.update(data: data)
+    }
+
+    func hexDigest() -> String {
+        lock.lock(); defer { lock.unlock() }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+}
 
 /// Live PhotoKit implementation of `AssetProviding` (§1.1).
 /// All PhotoKit types stay inside this file; the scanner only ever sees
@@ -47,6 +65,46 @@ final class PhotoKitAssetProvider: NSObject, AssetProviding, @unchecked Sendable
             continuation.onTermination = { [weak self] _ in
                 guard let self else { return }
                 self.library.unregisterChangeObserver(self)
+            }
+        }
+    }
+
+    func allAssetIds() async -> [String] {
+        let fetchResult = PHAsset.fetchAssets(with: nil)
+        var ids: [String] = []
+        ids.reserveCapacity(fetchResult.count)
+        fetchResult.enumerateObjects { asset, _, _ in
+            ids.append(asset.localIdentifier)
+        }
+        return ids
+    }
+
+    func snapshots(for localIds: [String]) async -> [AssetSnapshot] {
+        guard !localIds.isEmpty else { return [] }
+        let albumIndex = Self.buildAlbumIndex()
+        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: localIds, options: nil)
+        var snapshots: [AssetSnapshot] = []
+        fetchResult.enumerateObjects { asset, _, _ in
+            snapshots.append(Self.snapshot(from: asset, albumIndex: albumIndex))
+        }
+        return snapshots
+    }
+
+    func originalSHA256(localId: String) async -> String? {
+        let fetch = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil)
+        guard let asset = fetch.firstObject else { return nil }
+        let resources = PHAssetResource.assetResources(for: asset)
+            .filter { AssetSizer.isOriginalVariety(Self.kind(of: $0.type)) }
+        guard let resource = resources.first else { return nil }
+
+        return await withCheckedContinuation { continuation in
+            let hasher = SHA256Box()
+            let options = PHAssetResourceRequestOptions()
+            options.isNetworkAccessAllowed = false // never force iCloud downloads during scan
+            PHAssetResourceManager.default().requestData(for: resource, options: options) { data in
+                hasher.update(data)
+            } completionHandler: { error in
+                continuation.resume(returning: error == nil ? hasher.hexDigest() : nil)
             }
         }
     }
