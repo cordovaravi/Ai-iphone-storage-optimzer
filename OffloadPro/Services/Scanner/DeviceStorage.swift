@@ -9,6 +9,7 @@ struct DeviceStorage: Equatable, Sendable {
     var usedBytes: Int64 { max(0, totalBytes - availableBytes) }
 
     static func current() -> DeviceStorage? {
+        #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)
         let url = URL(fileURLWithPath: NSHomeDirectory())
         guard let values = try? url.resourceValues(forKeys: [
             .volumeTotalCapacityKey,
@@ -18,5 +19,10 @@ struct DeviceStorage: Equatable, Sendable {
         let available = values.volumeAvailableCapacityForImportantUsage
         else { return nil }
         return DeviceStorage(totalBytes: Int64(total), availableBytes: available)
+        #else
+        // Linux CI / non-Apple hosts: surface a synthetic total so UI previews
+        // and non-device builds still compile; never claim per-app figures.
+        return nil
+        #endif
     }
 }

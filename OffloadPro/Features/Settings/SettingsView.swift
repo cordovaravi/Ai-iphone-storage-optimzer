@@ -92,21 +92,7 @@ struct SettingsView: View {
             try TransferHistoryRecord.fetchAll(db)
         }) else { return }
 
-        var csv = "local_id,filename,bytes,sha256,destination_id,dest_path,completed_at\n"
-        for row in rows {
-            let fields = [
-                row.localId ?? "", row.filename ?? "",
-                row.bytes.map(String.init) ?? "", row.sha256 ?? "",
-                row.destinationId ?? "", row.destPath ?? "",
-                ISO8601DateFormatter().string(from: Date(timeIntervalSince1970: row.completedAt)),
-            ]
-            csv += fields.map { field in
-                field.contains(",") || field.contains("\"")
-                    ? "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
-                    : field
-            }.joined(separator: ",") + "\n"
-        }
-
+        let csv = HistoryCSVExporter.csv(from: rows)
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("offloadpro-history.csv")
         try? csv.data(using: .utf8)?.write(to: url)

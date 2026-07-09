@@ -1,10 +1,16 @@
 import Foundation
+#if canImport(CryptoKit)
 import CryptoKit
+#elseif canImport(Crypto)
+@preconcurrency import Crypto
+#else
+#error("CryptoKit or swift-crypto (Crypto) is required")
+#endif
 
 /// Dual SHA-256 + MD5 hasher fed from a single stream (§2.2.2, §2.2.3).
 /// SHA-256 is our golden-rule checksum; MD5 exists only because Google
 /// Drive attests `md5Checksum` on file metadata.
-struct StreamingHasher: Sendable {
+struct StreamingHasher {
     private var sha256 = SHA256()
     private var md5 = Insecure.MD5()
     private(set) var byteCount: Int64 = 0

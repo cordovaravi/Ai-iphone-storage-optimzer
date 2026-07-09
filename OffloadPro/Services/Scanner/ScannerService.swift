@@ -113,7 +113,7 @@ actor ScannerService {
         guard changeObservationTask == nil else { return }
         changeObservationTask = Task { [weak self] in
             guard let self else { return }
-            for await change in await self.provider.libraryChanges() {
+            for await change in self.provider.libraryChanges() {
                 try? await self.apply(change: change)
             }
         }
@@ -169,7 +169,9 @@ actor ScannerService {
     /// lazily inside candidate groups only (§1.2.5 pass 2 runs in the
     /// offload/duplicates flow where originals are streamed anyway).
     func runAnalysisPasses() async throws {
-        let images = try database.writer.read { db in
+        // Prefer the async DatabaseWriter APIs inside this async method so
+        // Swift 6 concurrency picks a single overload consistently (GRDB 6.29+).
+        let images = try await database.writer.read { db in
             try AssetRecord
                 .filter(sql: "media_type = ? AND (phash IS NULL OR blur_score IS NULL)",
                         arguments: [AssetClassifier.mediaTypeImage])
@@ -190,7 +192,8 @@ actor ScannerService {
             if updated.blurScore == nil, updated.isScreenshot != true {
                 updated.blurScore = BlurScorer.score(bitmap)
             }
-            try database.writer.write { db in try updated.save(db) }
+            let toSave = updated
+            try await database.writer.write { db in try toSave.save(db) }
             done += 1
             if done % 50 == 0 || done == images.count {
                 let percent = done * 100 / images.count
@@ -242,11 +245,19 @@ actor ScannerService {
         }
     }
 
+    /// F1.6 junk: blurry photos + accidental 0–1s videos (not screen recordings).
     func junkCandidates() throws -> [AssetRecord] {
         try database.writer.read { db in
             try AssetRecord
-                .filter(sql: "blur_score IS NOT NULL AND blur_score >= ? AND is_screenshot IS NOT 1",
-                        arguments: [BlurScorer.junkThreshold])
+                .filter(sql: """
+                    (blur_score IS NOT NULL AND blur_score >= ? AND is_screenshot IS NOT 1)
+                    OR (
+                        media_type = ?
+                        AND duration IS NOT NULL AND duration > 0 AND duration <= 1.0
+                        AND is_screen_recording IS NOT 1
+                    )
+                    """,
+                    arguments: [BlurScorer.junkThreshold, AssetClassifier.mediaTypeVideo])
                 .order(sql: "bytes DESC")
                 .fetchAll(db)
         }

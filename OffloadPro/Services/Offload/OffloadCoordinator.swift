@@ -52,6 +52,7 @@ actor OffloadCoordinator {
         }
 
         let now = Date().timeIntervalSince1970
+        var enqueuedCount = 0
         try database.writer.write { db in
             for record in records {
                 // Skip items already queued or in history (idempotent enqueue).
@@ -81,11 +82,12 @@ actor OffloadCoordinator {
                     updatedAt: now
                 )
                 try item.insert(db)
+                enqueuedCount += 1
             }
         }
-        Log.transfer.info("Enqueued batch of \(records.count) items")
+        Log.transfer.info("Enqueued batch of \(enqueuedCount) items")
         Task { try? await self.drainQueue() }
-        return .enqueued(count: records.count)
+        return .enqueued(count: enqueuedCount)
     }
 
     // MARK: Queue drain
@@ -97,7 +99,7 @@ actor OffloadCoordinator {
 
         while !isPaused {
             guard checkEnvironmentGuards() else {
-                Log.transfer.info("Paused by environment guard: \(self.pauseReason ?? "?", privacy: .public)")
+                Log.transfer.info("Paused by environment guard: \(self.pauseReason ?? "?")")
                 break
             }
             let pending = try nextBatch(limit: Self.maxParallelUploads)

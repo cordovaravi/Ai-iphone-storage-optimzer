@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Custom paywall (§6.2.2) with the iCloud-comparison block (F6.4).
-/// Copy discipline: never say "subscription" — this is a one-time purchase.
+/// Copy discipline: one-time / lifetime wording only — never recurring billing language.
 struct PaywallView: View {
     @EnvironmentObject private var purchases: PurchasesService
     @Environment(\.dismiss) private var dismiss
