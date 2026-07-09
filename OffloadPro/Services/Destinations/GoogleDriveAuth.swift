@@ -22,6 +22,9 @@ final class GoogleDriveAuth: NSObject, ASWebAuthenticationPresentationContextPro
         var expiresAt: Date
     }
 
+    /// Keeps the in-flight auth session alive while the sheet is presented.
+    private var activeSession: ASWebAuthenticationSession?
+
     enum AuthError: Error {
         case cancelled, badResponse, noRefreshToken, notSignedIn
     }
@@ -57,17 +60,25 @@ final class GoogleDriveAuth: NSObject, ASWebAuthenticationPresentationContextPro
             let session = ASWebAuthenticationSession(
                 url: components.url!,
                 callbackURLScheme: Self.redirectScheme
-            ) { url, error in
+            ) { [weak self] url, error in
+                Task { @MainActor in self?.activeSession = nil }
                 if let url {
                     continuation.resume(returning: url)
-                } else {
-                    continuation.resume(throwing: (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin
-                        ? AuthError.cancelled
-                        : (error ?? AuthError.badResponse))
+                    return
                 }
+                let mapped: any Error
+                if let sessionError = error as? ASWebAuthenticationSessionError,
+                   sessionError.code == .canceledLogin {
+                    mapped = AuthError.cancelled
+                } else {
+                    mapped = error ?? AuthError.badResponse
+                }
+                continuation.resume(throwing: mapped)
             }
             session.presentationContextProvider = self
             session.prefersEphemeralWebBrowserSession = false
+            // The session must stay strongly referenced while presenting.
+            activeSession = session
             session.start()
         }
 

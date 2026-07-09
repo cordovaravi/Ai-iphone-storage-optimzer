@@ -1,4 +1,5 @@
 import SwiftUI
+import GRDB
 
 /// F3 Smart Modes (Pro): "Free up N GB", rule cards, Before-Trip Mode.
 struct SmartModesView: View {
@@ -62,7 +63,7 @@ private struct SmartModesContent: View {
             .tint(.orange)
         }
         .padding()
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
     }
 
     // MARK: Rule cards (F3.2)
@@ -94,7 +95,7 @@ private struct SmartModesContent: View {
                             .foregroundStyle(.tertiary)
                     }
                     .padding()
-                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
                 }
             }
         }
@@ -125,7 +126,7 @@ private struct SmartModesContent: View {
             }
         }
         .padding()
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func loadRuleCards() async {

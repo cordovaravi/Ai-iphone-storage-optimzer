@@ -151,7 +151,7 @@ struct DashboardView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
-                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
                 }
                 .accessibilityLabel("\(entry.category.rawValue), \(entry.count) items, \(entry.bytes.formattedBytes)")
             }
@@ -233,7 +233,7 @@ struct DashboardView: View {
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
         }
         .padding()
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
     }
 }
 
@@ -254,7 +254,7 @@ struct StorageHeaderView: View {
             .foregroundStyle(.secondary)
         }
         .padding()
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("iPhone storage: \(storage.usedBytes.formattedBytes) used, \(storage.availableBytes.formattedBytes) free of \(storage.totalBytes.formattedBytes)")
     }

@@ -13,7 +13,7 @@ enum AssetClassifier {
     static let subtypePanorama = 1 << 0         // .photoPanorama
     static let subtypeHDR = 1 << 1
     static let subtypeSloMo = 1 << 17           // .videoHighFrameRate
-    static let subtypeTimelapse = 1 << 16
+    static let subtypeTimelapse = 1 << 18   // .videoTimelapse
 
     static func isScreenshot(_ asset: AssetSnapshot) -> Bool {
         asset.mediaType == mediaTypeImage && (asset.subtype & subtypeScreenshot) != 0

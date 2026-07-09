@@ -1,4 +1,5 @@
 import SwiftUI
+import GRDB
 
 struct SettingsView: View {
     @EnvironmentObject private var purchases: PurchasesService

@@ -67,7 +67,7 @@ struct PaywallView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func featureRow(_ icon: String, _ text: String) -> some View {
@@ -99,7 +99,7 @@ struct PaywallView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding()
-            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 16))
+            .background(Color.gray.opacity(0.15), in: RoundedRectangle(cornerRadius: 16))
         }
     }
 

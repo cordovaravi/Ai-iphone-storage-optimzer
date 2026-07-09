@@ -343,13 +343,16 @@ actor OffloadCoordinator {
     // MARK: Background continuation (§2.2.8)
 
     nonisolated func handleBackgroundTask(_ task: BGProcessingTask) {
+        // BGProcessingTask is not Sendable; box it so the async work and the
+        // expiration handler can both reach it without concurrency warnings.
+        let boxed = UncheckedSendableBox(task)
         let work = Task { [weak self] in
             try? await self?.drainQueue()
-            task.setTaskCompleted(success: true)
+            boxed.value.setTaskCompleted(success: true)
         }
         task.expirationHandler = {
             work.cancel()
-            task.setTaskCompleted(success: false)
+            boxed.value.setTaskCompleted(success: false)
         }
         Self.scheduleBackgroundProcessing()
     }
@@ -371,4 +374,11 @@ actor OffloadCoordinator {
         let month = calendar.component(.month, from: date)
         return String(format: "%04d/%02d/%@", year, month, filename)
     }
+}
+
+/// Wraps a non-Sendable value whose cross-actor use is externally
+/// synchronized (e.g. BGTask completion, which is thread-safe).
+private final class UncheckedSendableBox<Value>: @unchecked Sendable {
+    let value: Value
+    init(_ value: Value) { self.value = value }
 }

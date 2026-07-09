@@ -9,22 +9,44 @@ drives (pendrive/SSD), with a one-time-purchase Pro unlock via RevenueCat.
 
 ## Getting started (on a Mac)
 
+**Use the `claude/offloadpro-ios-build-str6s2` branch** (the app branch with
+all build fixes) — clone the repo rather than downloading a branch zip so you
+can pull fixes:
+
+```bash
+git clone https://github.com/cordovaravi/Ai-iphone-storage-optimzer.git
+cd Ai-iphone-storage-optimzer
+git checkout claude/offloadpro-ios-build-str6s2
+```
+
 The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 so the repo stays merge-friendly:
 
 ```bash
 brew install xcodegen
 xcodegen generate
-open OffloadPro.xcodeproj
+open OffloadPro.xcodeproj      # open the .xcodeproj, NOT the folder
 ```
 
 Then:
 
 1. Set your development team in Signing & Capabilities.
-2. Replace the placeholders in `OffloadPro/App/OffloadProApp.swift` → `Secrets`
+2. Replace the placeholders in `OffloadPro/Core/Config/Secrets.swift`
    (RevenueCat public API key, Google OAuth client ID, optional Sentry DSN).
-   For CI, inject via an `.xcconfig` instead of editing source.
+   The app runs fine with placeholders — purchases just stay in free tier.
 3. Build & run on a device (PhotoKit + external-drive flows need real hardware).
+
+### Build troubleshooting
+
+- **Open `OffloadPro.xcodeproj`, not the repo folder.** Opening the folder
+  makes Xcode load `Package.swift`, which is the Linux CI package — it
+  deliberately excludes the app, UI, and PhotoKit surfaces.
+- **Regenerate after pulling**: `xcodegen generate` any time `project.yml`
+  or the file list changes.
+- **Stale SPM cache**: File → Packages → Reset Package Caches, then build.
+- If Xcode complains about the Swift version, make sure you regenerated the
+  project — older revisions of `project.yml` set `SWIFT_VERSION: 5.10`,
+  which Xcode rejects (fixed to `5.0`).
 
 ## Architecture
 

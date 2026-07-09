@@ -19,7 +19,9 @@ packages:
 
 settings:
   base:
-    SWIFT_VERSION: "5.10"
+    # Xcode's "Swift Language Version" only accepts 4.0/4.2/5.0/6.0 —
+    # the actual 5.10 compiler comes with Xcode 16 regardless.
+    SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: complete
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     CODE_SIGN_STYLE: Automatic
@@ -31,13 +33,12 @@ targets:
     type: application
     platform: iOS
     sources:
+      # coach.json is auto-assigned to the resources build phase by XcodeGen.
+      # StoreKitConfig.storekit stays out of the target — select it in the
+      # scheme's Run options for sandbox IAP testing.
       - path: OffloadPro
         excludes:
           - Resources/StoreKitConfig.storekit
-    resources:
-      - path: OffloadPro/Resources/coach.json
-      - path: OffloadPro/Resources/StoreKitConfig.storekit
-        buildPhase: none
     dependencies:
       - package: GRDB
         product: GRDB

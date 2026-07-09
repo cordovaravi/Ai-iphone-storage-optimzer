@@ -61,16 +61,24 @@ final class LocalDriveDestination: Destination, @unchecked Sendable {
 
         let values = try root.resourceValues(forKeys: [
             .volumeAvailableCapacityKey,
-            .volumeSupportsFileSizesKey,
+            .volumeLocalizedFormatDescriptionKey,
         ])
         if let available = values.volumeAvailableCapacity, Int64(available) < freeBytesNeeded {
             throw TransferError.destinationFull(neededBytes: freeBytesNeeded - Int64(available))
         }
-        // FAT32 4GB single-file limit (F4.6). `volumeSupportsFileSizes`
-        // isn't universally populated, so the upload path also catches EFBIG.
-        if values.volumeSupportsFileSizes == false, freeBytesNeeded > Self.fat32FileLimit {
+        // FAT32 4GB single-file limit (F4.6). The format description isn't
+        // universally populated, so the copy path also maps write failures.
+        if freeBytesNeeded > Self.fat32FileLimit, Self.isFATVolume(values.volumeLocalizedFormatDescription) {
             throw TransferError.fileTooLargeForFilesystem(limitBytes: Self.fat32FileLimit)
         }
+    }
+
+    /// "MS-DOS (FAT32)", "FAT32", "msdos" — anything FAT-family caps files
+    /// at 4 GB. exFAT explicitly does not.
+    static func isFATVolume(_ formatDescription: String?) -> Bool {
+        guard let description = formatDescription?.lowercased() else { return false }
+        if description.contains("exfat") { return false }
+        return description.contains("fat") || description.contains("ms-dos") || description.contains("msdos")
     }
 
     func upload(
