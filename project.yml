@@ -32,6 +32,12 @@ targets:
     platform: iOS
     sources:
       - path: OffloadPro
+        excludes:
+          - Resources/StoreKitConfig.storekit
+    resources:
+      - path: OffloadPro/Resources/coach.json
+      - path: OffloadPro/Resources/StoreKitConfig.storekit
+        buildPhase: none
     dependencies:
       - package: GRDB
         product: GRDB
@@ -66,6 +72,10 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
         ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: Google OAuth
+            CFBundleURLSchemes:
+              - com.we4soft.offloadpro
 
   OffloadProTests:
     type: bundle.unit-test

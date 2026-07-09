@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  unit-tests:
+    name: OffloadPro core unit tests (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsqlite3-dev libcurl4-openssl-dev libxml2-dev libncurses6
+
+      - name: Install Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0.3"
+
+      - name: Cache custom SQLite
+        uses: actions/cache@v4
+        with:
+          path: /tmp/sqlite-custom
+          key: sqlite-custom-3.45.1-snapshot-v1
+
+      - name: Run unit tests
+        run: |
+          chmod +x scripts/run-linux-tests.sh
+          scripts/run-linux-tests.sh
+
+      - name: Copy audit (no user-facing "subscription")
+        run: |
+          set -euo pipefail
+          # Only flag string/JSON literals — comments that document the ban are fine.
+          hits="$(
+            grep -RIn --include='*.swift' --include='*.json' -i 'subscription' \
+              OffloadPro/Features OffloadPro/Resources/coach.json \
+            | grep -vE '^\S+:[0-9]+:[[:space:]]*//' \
+            | grep -vE '^\S+:[0-9]+:[[:space:]]*/\*' \
+            || true
+          )"
+          if [[ -n "$hits" ]]; then
+            echo "$hits" >&2
+            echo "Forbidden user-facing 'subscription' wording found" >&2
+            exit 1
+          fi
+          echo "Copy audit passed"
+
+  project-yml:
+    name: Validate XcodeGen project.yml
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: YAML sanity
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          text = pathlib.Path("project.yml").read_text()
+          required = [
+              "name: OffloadPro",
+              "iOS: \"16.0\"",
+              "SWIFT_STRICT_CONCURRENCY: complete",
+              "com.we4soft.offloadpro",
+              "NSPhotoLibraryUsageDescription",
+              "com.offloadpro.transfer",
+              "CFBundleURLSchemes",
+          ]
+          missing = [r for r in required if r not in text]
+          if missing:
+              print("project.yml missing:", missing, file=sys.stderr)
+              sys.exit(1)
+          print("project.yml OK")
+          PY

@@ -77,6 +77,7 @@ struct DashboardView: View {
                     StorageHeaderView(storage: storage)
                 }
                 scanProgressChip
+                RecentlyDeletedReminderCard()
                 categoryGrid
                 spaceHogsSection
                 reviewLinks
@@ -256,6 +257,25 @@ struct StorageHeaderView: View {
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("iPhone storage: \(storage.usedBytes.formattedBytes) used, \(storage.availableBytes.formattedBytes) free of \(storage.totalBytes.formattedBytes)")
+    }
+}
+
+/// F1.7 — Recently Deleted reminder. Photos there still consume space for
+/// up to 30 days; we cannot measure that album size without a separate
+/// PhotoKit fetch, so this is guidance-only (no fabricated GB claims).
+struct RecentlyDeletedReminderCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Check Recently Deleted", systemImage: "trash.circle")
+                .font(.subheadline.bold())
+            Text("Items you delete stay in Photos → Albums → Recently Deleted for up to 30 days and still use storage until you empty that album.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -75,6 +75,12 @@ deletion (PRD risk R1).
 | §3 | Smart Modes | ✅ code complete |
 | §7/§8 | Hardening + full gate matrix | ⬜ requires devices, staging accounts, physical drives |
 
+**Production-readiness hardening in this branch:** Linux-runnable SPM core +
+CI, StoreKit config for sandbox IAP, Google OAuth URL scheme, safe no-op when
+RevenueCat/Sentry secrets are placeholders, F1.7 Recently Deleted reminder,
+F1.6 accidental micro-video junk detection, correct enqueue counts, unaligned-
+safe dHash decode, History CSV exporter extracted for unit tests.
+
 “Code complete” = written to spec with unit tests; on-device integration,
 performance (20k-asset scan ≤ 90 s), and the 50 GB soak test (§2.3) must run on
 real hardware before release. See `PRIVACY.md` for the privacy-label mapping.
@@ -87,7 +93,26 @@ screenshots), dHash distances, transfer state machine legality (full matrix +
 random walks), `markVerified` refusals (mismatch/degraded/missing ref),
 meter boundary math (exactly 5 GB + 1 byte), planner determinism/overshoot/
 exclusions, coach decoding/version pinning/iOS filtering, pendrive incremental
-diff. Run with ⌘U after `xcodegen generate`.
+diff, streaming hasher vectors, and history CSV export.
+
+**On a Mac (full app + UI tests):**
+
+```bash
+xcodegen generate
+# then ⌘U in Xcode, or:
+xcodebuild test -scheme OffloadPro -destination 'platform=iOS Simulator,name=iPhone 16'
+```
+
+**On Linux / CI (pure service-layer suite, no Xcode):**
+
+```bash
+./scripts/run-linux-tests.sh
+```
+
+This builds a local SQLite with `SQLITE_ENABLE_SNAPSHOT` (required by GRDB on
+Linux) and runs the SPM package defined in `Package.swift`. PhotoKit / UIKit /
+RevenueCat / Sentry surfaces are excluded from that package; they still ship
+in the XcodeGen iOS app.
 
 ## App Review guardrails baked in
 

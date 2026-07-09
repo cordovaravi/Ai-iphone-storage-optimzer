@@ -82,6 +82,8 @@ final class AppEnvironment {
     }
 
     private func configureSentry() {
+        // Skip Sentry when no DSN is configured (local/dev builds).
+        guard !Secrets.sentryDSN.isEmpty else { return }
         SentrySDK.start { options in
             options.dsn = Secrets.sentryDSN
             options.enableAutoSessionTracking = true
@@ -106,13 +108,4 @@ final class AppEnvironment {
             coordinator.handleBackgroundTask(task)
         }
     }
-}
-
-/// Build-time configuration. Replace placeholders via Secrets.xcconfig or CI
-/// injection — never commit real keys.
-enum Secrets {
-    static let revenueCatAPIKey = "appl_REPLACE_ME"
-    static let sentryDSN = ""
-    static let googleOAuthClientId = "REPLACE_ME.apps.googleusercontent.com"
-    static let coachRemoteURL = URL(string: "https://static.offloadpro.app/coach/coach.json")
 }

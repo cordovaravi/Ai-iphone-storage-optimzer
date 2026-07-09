@@ -55,7 +55,7 @@ final class PendriveManifestTests: XCTestCase {
                 sha256: nil, phash: nil, blurScore: nil, scannedAt: 0
             )
         }
-        let summary = PendriveService.driveFullSummary(
+        let summary = PendriveMath.driveFullSummary(
             remaining: records,
             availableBytes: 4_000_000_000
         )

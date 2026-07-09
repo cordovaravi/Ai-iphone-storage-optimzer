@@ -108,11 +108,9 @@ actor PendriveService {
         }
     }
 
-    /// Drive-full calculator for the mid-run pause UI (§4.1.5):
-    /// "Drive needs ~12GB more; 41 items remaining."
+    /// Drive-full calculator for the mid-run pause UI (§4.1.5).
     static func driveFullSummary(remaining: [AssetRecord], availableBytes: Int64) -> (neededBytes: Int64, itemCount: Int) {
-        let remainingBytes = remaining.reduce(0) { $0 + $1.bytes }
-        return (max(0, remainingBytes - availableBytes), remaining.count)
+        PendriveMath.driveFullSummary(remaining: remaining, availableBytes: availableBytes)
     }
 
     /// Eject etiquette (§4.1.6).

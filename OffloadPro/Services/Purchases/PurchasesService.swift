@@ -19,6 +19,15 @@ final class PurchasesService: NSObject, ObservableObject {
     private var infoTask: Task<Void, Never>?
 
     func configure() {
+        // Fail closed to free tier when secrets are still placeholders —
+        // avoids crashing / noisy RC errors in unsigned local builds.
+        guard !Secrets.hasPlaceholderRevenueCatKey else {
+            Log.purchase.info("RevenueCat key not configured; running as free tier")
+            isPro = false
+            entitlementUnknownOffline = false
+            return
+        }
+
         let configuration = Configuration.Builder(withAPIKey: Secrets.revenueCatAPIKey)
         #if DEBUG
         Purchases.logLevel = .debug

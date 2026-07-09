@@ -55,7 +55,7 @@ final class ScannerIncrementalTests: XCTestCase {
 
         try await scanner.runFullScan()
 
-        let count = try database.writer.read { db in
+        let count = try await database.writer.read { db in
             try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM asset_index") ?? 0
         }
         XCTAssertEqual(count, 20)
@@ -68,7 +68,7 @@ final class ScannerIncrementalTests: XCTestCase {
         let scanner = ScannerService(database: database, provider: provider)
         try await scanner.runFullScan()
 
-        let before = try database.writer.read { db in
+        let before = try await database.writer.read { db in
             try AssetRecord.fetchAll(db)
         }
 
@@ -79,7 +79,7 @@ final class ScannerIncrementalTests: XCTestCase {
         )
         try await scanner.apply(change: change)
 
-        let after = try database.writer.read { db in try AssetRecord.fetchAll(db) }
+        let after = try await database.writer.read { db in try AssetRecord.fetchAll(db) }
         let afterIds = Set(after.map(\.localId))
 
         XCTAssertEqual(after.count, 12) // 10 - 1 + 3
@@ -100,7 +100,7 @@ final class ScannerIncrementalTests: XCTestCase {
         try await scanner.runFullScan()
 
         // Simulate a completed analysis pass.
-        try database.writer.write { db in
+        try await database.writer.write { db in
             try db.execute(
                 sql: "UPDATE asset_index SET sha256 = 'deadbeef', blur_score = 0.4 WHERE local_id = 'a1'"
             )
@@ -108,7 +108,7 @@ final class ScannerIncrementalTests: XCTestCase {
 
         try await scanner.runFullScan() // re-scan must not wipe analysis
 
-        let record = try database.writer.read { db in
+        let record = try await database.writer.read { db in
             try AssetRecord.fetchOne(db, key: "a1")
         }
         XCTAssertEqual(record?.sha256, "deadbeef")

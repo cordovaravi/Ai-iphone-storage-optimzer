@@ -66,6 +66,14 @@ enum DHash {
 
     static func hash(from data: Data) -> UInt64? {
         guard data.count == 8 else { return nil }
-        return data.withUnsafeBytes { $0.load(as: UInt64.self) }.bigEndian
+        // Use unaligned-safe reconstruction — Data buffers are not
+        // guaranteed to be 8-byte aligned on all platforms (Linux CI).
+        return data.withUnsafeBytes { buffer -> UInt64 in
+            var value: UInt64 = 0
+            for index in 0..<8 {
+                value = (value << 8) | UInt64(buffer[index])
+            }
+            return value
+        }
     }
 }

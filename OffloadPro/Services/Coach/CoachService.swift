@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import GRDB
 
 /// Storage Coach content model (§5.1). Decoding is tolerant to unknown
